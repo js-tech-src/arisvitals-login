@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Aris - Login</title>
+<style>
+  body{font-family:sans-serif;max-width:360px;margin:80px auto;padding:0 16px}
+  input{width:100%;padding:8px;margin:6px 0 16px;box-sizing:border-box}
+  button{width:100%;padding:10px;background:#111;color:#fff;border:0;border-radius:6px;cursor:pointer}
+  button:disabled{opacity:0.5;cursor:default}
+  .err{color:#b00020;font-size:14px}
+</style>
+</head>
+<body>
+  <h2>Entrar no Aris</h2>
+  <p id="err" class="err"></p>
+  <form id="loginForm">
+    <label>E-mail</label>
+    <input type="email" id="email" required>
+    <label>Senha</label>
+    <input type="password" id="password" required>
+    <button type="submit" id="submitBtn">Entrar</button>
+  </form>
+
+  <script>
+    // Ponte OAuth: esta pagina estatica (GitHub Pages) coleta a credencial e chama a
+    // Edge Function do Supabase via JSON (Edge Functions nao servem HTML - ver ADR-004 revisado).
+    const BRIDGE_URL = "https://ejhourrhndkfgksliusl.supabase.co/functions/v1/oauth-bridge/login";
+
+    const params = new URLSearchParams(window.location.search);
+    const clientId = params.get("client_id");
+    const redirectUri = params.get("redirect_uri");
+    const state = params.get("state") || "";
+
+    const form = document.getElementById("loginForm");
+    const errEl = document.getElementById("err");
+    const btn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errEl.textContent = "";
+      btn.disabled = true;
+      btn.textContent = "Entrando...";
+
+      try {
+        const res = await fetch(BRIDGE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: document.getElementById("email").value,
+            password: document.getElementById("password").value,
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            state: state,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errEl.textContent = data.error === "invalid_credentials"
+            ? "E-mail ou senha invalidos."
+            : "Erro ao entrar. Tente novamente.";
+          btn.disabled = false;
+          btn.textContent = "Entrar";
+          return;
+        }
+        window.location.href = data.redirect_to;
+      } catch (err) {
+        errEl.textContent = "Erro de conexao. Tente novamente.";
+        btn.disabled = false;
+        btn.textContent = "Entrar";
+      }
+    });
+  </script>
+</body>
+</html>
