@@ -34,27 +34,11 @@
     text-align: center;
   }
   .logo {
-    width: 72px;
-    height: 72px;
-    margin: 0 auto 20px;
+    width: 220px;
+    max-width: 70%;
+    height: auto;
+    margin: 0 auto 32px;
     display: block;
-  }
-  h1 {
-    font-weight: 700;
-    font-size: 28px;
-    letter-spacing: 0.18em;
-    margin: 0;
-    color: var(--white);
-  }
-  .vitals {
-    font-weight: 500;
-    font-size: 13px;
-    letter-spacing: 0.35em;
-    margin: 2px 0 36px;
-    background: linear-gradient(90deg, var(--green), var(--blue), var(--cyan));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
   }
   label {
     display: block;
@@ -114,19 +98,7 @@
 </head>
 <body>
   <div class="card">
-    <svg class="logo" viewBox="0 0 200 200" fill="none">
-      <defs>
-        <linearGradient id="halo-gradient" x1="20" y1="160" x2="180" y2="40" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#42E37C"/>
-          <stop offset="50%" stop-color="#37D5FF"/>
-          <stop offset="100%" stop-color="#00FFC8"/>
-        </linearGradient>
-      </defs>
-      <circle cx="100" cy="98" r="82" stroke="url(#halo-gradient)" stroke-width="5" opacity="0.9"/>
-      <path d="M 100 18 L 188 182 L 150 182 L 100 88 L 50 182 L 12 182 Z" fill="#F8FAFC"/>
-    </svg>
-    <h1>ARIS</h1>
-    <p class="vitals">VITALS</p>
+    <img class="logo" src="assets/logo-lockup.png" alt="Aris Vitals">
 
     <p id="err" class="err"></p>
     <form id="loginForm">
