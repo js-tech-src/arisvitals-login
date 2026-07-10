@@ -1,18 +1,59 @@
 <!doctype html>
-<html>
+<html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aris - Politica de Privacidade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  body{font-family:sans-serif;max-width:640px;margin:60px auto;padding:0 16px;line-height:1.6;color:#222}
-  h1{font-size:22px}
-  h2{font-size:17px;margin-top:32px}
+  :root {
+    --bg-primary: #07121D;
+    --bg-secondary: #182836;
+    --green: #42E37C;
+    --blue: #37D5FF;
+    --cyan: #00FFC8;
+    --white: #F8FAFC;
+  }
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg-primary);
+    color: var(--white);
+    max-width: 640px;
+    margin: 60px auto;
+    padding: 0 24px 60px;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+  .logo { width: 48px; height: 48px; display: block; margin-bottom: 24px; }
+  h1 { font-weight: 700; font-size: 22px; letter-spacing: 0.04em; }
+  h1 em {
+    display: block; font-style: normal; font-weight: 500; font-size: 14px;
+    margin-top: 4px; opacity: 0.65;
+  }
+  h2 {
+    font-weight: 600; font-size: 16px; margin-top: 36px;
+    background: linear-gradient(90deg, var(--green), var(--blue));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  p { color: var(--white); opacity: 0.85; font-weight: 300; }
 </style>
 </head>
 <body>
-  <h1>Aris - Politica de Privacidade (PoC)</h1>
-  <p><em>Documento de referencia para a fase de prova de conceito (PoC). Sera substituido por
-  uma politica formal antes de qualquer lancamento publico.</em></p>
+  <svg class="logo" viewBox="0 0 200 200" fill="none">
+    <defs>
+      <linearGradient id="halo-gradient" x1="20" y1="160" x2="180" y2="40" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#42E37C"/>
+        <stop offset="50%" stop-color="#37D5FF"/>
+        <stop offset="100%" stop-color="#00FFC8"/>
+      </linearGradient>
+    </defs>
+    <circle cx="100" cy="98" r="82" stroke="url(#halo-gradient)" stroke-width="6" opacity="0.9"/>
+    <path d="M 100 18 L 188 182 L 150 182 L 100 88 L 50 182 L 12 182 Z" fill="#F8FAFC"/>
+  </svg>
+
+  <h1>Aris - Politica de Privacidade<em>Documento de referencia para a fase de prova de conceito (PoC). Sera substituido por politica formal antes de qualquer lancamento publico.</em></h1>
 
   <h2>O que e o Aris</h2>
   <p>Aris e um assistente pessoal de saude que ajuda o usuario a registrar e acompanhar eventos
