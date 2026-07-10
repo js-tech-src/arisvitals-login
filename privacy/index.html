@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Aris - Politica de Privacidade</title>
+<style>
+  body{font-family:sans-serif;max-width:640px;margin:60px auto;padding:0 16px;line-height:1.6;color:#222}
+  h1{font-size:22px}
+  h2{font-size:17px;margin-top:32px}
+</style>
+</head>
+<body>
+  <h1>Aris - Politica de Privacidade (PoC)</h1>
+  <p><em>Documento de referencia para a fase de prova de conceito (PoC). Sera substituido por
+  uma politica formal antes de qualquer lancamento publico.</em></p>
+
+  <h2>O que e o Aris</h2>
+  <p>Aris e um assistente pessoal de saude que ajuda o usuario a registrar e acompanhar eventos
+  de bem-estar (peso, alimentacao, agua, exercicio, suplementacao).</p>
+
+  <h2>Dados coletados</h2>
+  <p>Eventos de saude relatados pelo proprio usuario (ex.: peso, refeicoes, agua, exercicios,
+  suplementos) e o e-mail usado para autenticacao.</p>
+
+  <h2>Como os dados sao usados</h2>
+  <p>Exclusivamente para registrar e devolver ao proprio usuario seu historico de saude, e para
+  gerar orientacao baseada nesse historico. Dados nao sao compartilhados com terceiros nem
+  usados para publicidade.</p>
+
+  <h2>Isolamento entre usuarios</h2>
+  <p>Cada usuario so tem acesso aos proprios dados, garantido por controle de acesso a nivel de
+  banco de dados (Row Level Security), nao apenas por logica de aplicacao.</p>
+
+  <h2>Autenticacao</h2>
+  <p>O login e feito via e-mail e senha, processado pelo Supabase Auth. A senha nao e
+  armazenada nem visivel para o assistente em nenhum momento.</p>
+
+  <h2>Contato</h2>
+  <p>Duvidas sobre este PoC: entre em contato com o responsavel pelo projeto.</p>
+</body>
+</html>
