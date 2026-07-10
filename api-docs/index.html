@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Aris - API Docs</title>
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+<style>
+  body { margin: 0; background: #07121D; }
+  .topbar { display: none !important; }
+  .swagger-ui .info .title { color: #F8FAFC; }
+</style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    window.onload = () => {
+      window.ui = SwaggerUIBundle({
+        urls: [
+          { url: "./events-api.openapi.yaml", name: "Events API" },
+          { url: "./oauth-bridge.openapi.yaml", name: "OAuth Bridge" }
+        ],
+        dom_id: "#swagger-ui",
+        presets: [SwaggerUIBundle.presets.apis],
+        layout: "BaseLayout",
+      });
+    };
+  </script>
+</body>
+</html>

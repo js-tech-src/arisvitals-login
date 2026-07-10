@@ -1,0 +1,101 @@
+openapi: 3.1.0
+info:
+  title: Aris OAuth Bridge
+  version: 1.0.0
+  description: >
+    Ponte OAuth (ADR-004) entre ChatGPT Actions e o Supabase Auth.
+    Implementa o fluxo Authorization Code: /authorize redireciona pra
+    pagina de login estatica (GitHub Pages), /login troca credencial por
+    code, /token troca code (ou refresh_token) por access_token real do
+    Supabase Auth.
+servers:
+  - url: https://ejhourrhndkfgksliusl.supabase.co/functions/v1/oauth-bridge
+paths:
+  /authorize:
+    get:
+      operationId: authorize
+      summary: Inicia o fluxo OAuth (chamado pelo ChatGPT, nao pelo usuario diretamente)
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema: { type: string }
+        - name: redirect_uri
+          in: query
+          required: true
+          schema: { type: string }
+          description: Validado contra allowlist (chat.openai.com, chatgpt.com)
+        - name: state
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "302":
+          description: Redireciona pra pagina de login estatica (arisvitals-login)
+        "400":
+          description: client_id ou redirect_uri invalido
+  /login:
+    post:
+      operationId: login
+      summary: Troca email/senha por um code de uso unico (chamado pela pagina de login estatica via fetch JSON)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, client_id, redirect_uri]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                client_id: { type: string }
+                redirect_uri: { type: string }
+                state: { type: string }
+      responses:
+        "200":
+          description: Login valido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  redirect_to:
+                    type: string
+                    description: URL com ?code=...&state=... para o navegador seguir
+        "401":
+          description: invalid_credentials
+        "400":
+          description: invalid_client ou invalid_redirect_uri
+  /token:
+    post:
+      operationId: token
+      summary: Troca code (ou refresh_token) por access_token real do Supabase Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [grant_type, client_id, client_secret]
+              properties:
+                grant_type: { type: string, enum: [authorization_code, refresh_token] }
+                code: { type: string, description: "obrigatorio se grant_type=authorization_code" }
+                refresh_token: { type: string, description: "obrigatorio se grant_type=refresh_token" }
+                client_id: { type: string }
+                client_secret: { type: string }
+      responses:
+        "200":
+          description: Token emitido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  token_type: { type: string, example: bearer }
+                  expires_in: { type: integer, example: 3600 }
+                  refresh_token: { type: string }
+        "401":
+          description: invalid_client
+        "400":
+          description: invalid_grant ou unsupported_grant_type

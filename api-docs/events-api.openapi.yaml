@@ -1,0 +1,66 @@
+openapi: 3.1.0
+info:
+  title: Aris Events API (PoC)
+  version: 1.0.0
+servers:
+  - url: https://ejhourrhndkfgksliusl.supabase.co/functions/v1/events-api
+paths:
+  /create:
+    post:
+      operationId: createEvent
+      summary: Registra um evento de saude (peso, alimentacao, agua, exercicio ou suplemento)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event_datetime, domain, metric, value]
+              properties:
+                event_datetime:
+                  type: string
+                  description: "Data e hora do evento, formato ISO (ex: 2026-07-10T08:30:00)"
+                domain:
+                  type: string
+                  enum: [peso, alimentacao, agua, exercicio, suplemento]
+                item:
+                  type: string
+                  description: "Nome legivel do item (ex: Balanca, Peito de frango)"
+                metric:
+                  type: string
+                  description: "Chave da metrica (ex: peso_kg, kcal, volume_ml)"
+                value:
+                  type: string
+                unit:
+                  type: string
+                source:
+                  type: string
+                  enum: [imagem_balanca, imagem_exercicio, texto_usuario, contexto_inicial, rotulo_produto]
+                confidence:
+                  type: string
+                  enum: [alta, media, baixa]
+                grupo_substituicao:
+                  type: string
+      responses:
+        "201":
+          description: Evento criado
+  /list:
+    get:
+      operationId: listEvents
+      summary: Lista os eventos mais recentes do paciente autenticado
+      parameters:
+        - name: domain
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [peso, alimentacao, agua, exercicio, suplemento]
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Lista de eventos
