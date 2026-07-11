@@ -1,14 +1,14 @@
 openapi: 3.1.0
 info:
   title: Aris Events API (PoC)
-  version: 1.0.0
+  version: 1.1.0
 servers:
   - url: https://ejhourrhndkfgksliusl.supabase.co/functions/v1/events-api
 paths:
   /create:
     post:
       operationId: createEvent
-      summary: Registra um evento de saude (peso, alimentacao, agua, exercicio ou suplemento)
+      summary: Registra um evento de saude (peso, alimentacao, agua, exercicio, suplemento ou exame)
       requestBody:
         required: true
         content:
@@ -22,7 +22,7 @@ paths:
                   description: "Data e hora do evento, formato ISO (ex: 2026-07-10T08:30:00)"
                 domain:
                   type: string
-                  enum: [peso, alimentacao, agua, exercicio, suplemento]
+                  enum: [peso, alimentacao, agua, exercicio, suplemento, exame]
                 item:
                   type: string
                   description: "Nome legivel do item (ex: Balanca, Peito de frango)"
@@ -35,12 +35,18 @@ paths:
                   type: string
                 source:
                   type: string
-                  enum: [imagem_balanca, imagem_exercicio, texto_usuario, contexto_inicial, rotulo_produto]
+                  enum: [imagem_balanca, imagem_exercicio, texto_usuario, contexto_inicial, rotulo_produto, documento_exame, migracao_historica]
                 confidence:
                   type: string
                   enum: [alta, media, baixa]
                 grupo_substituicao:
                   type: string
+                refeicao_tipo:
+                  type: string
+                  description: "Quando domain=alimentacao: nome da refeicao do protocolo vigente (ex: Desjejum), usado no calculo de aderencia"
+                contexto:
+                  type: string
+                  description: "Motivo/circunstancia opcional anexado pelo paciente (ex: 'era festa', 'trabalhei da rua')"
       responses:
         "201":
           description: Evento criado
@@ -54,7 +60,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [peso, alimentacao, agua, exercicio, suplemento]
+            enum: [peso, alimentacao, agua, exercicio, suplemento, exame]
         - name: limit
           in: query
           required: false
@@ -64,3 +70,35 @@ paths:
       responses:
         "200":
           description: Lista de eventos
+  /documents/upload:
+    post:
+      operationId: uploadDocument
+      summary: Envia um documento medico (receita, exame, plano) para armazenamento seguro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [file_base64, filename, content_type, tipo_documento]
+              properties:
+                file_base64:
+                  type: string
+                  description: "Conteudo do arquivo codificado em base64"
+                filename:
+                  type: string
+                content_type:
+                  type: string
+                  enum: [image/jpeg, image/png, image/webp, image/heic, application/pdf]
+                tipo_documento:
+                  type: string
+                  enum: [receita, exame, plano_alimentar, plano_treino, outro]
+                professional_id:
+                  type: integer
+                  description: "ID do profissional em reference_healthcare_professionals, se identificado"
+                clinic_id:
+                  type: integer
+                  description: "ID da clinica/laboratorio em reference_clinics, se identificado"
+      responses:
+        "201":
+          description: Documento gravado (storage + patient_documents)
