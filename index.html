@@ -126,10 +126,46 @@
     margin: 8px 0 0;
     color: #FF9B9B;
   }
+  .unauthorized-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 128, 128, 0.12);
+    border: 1px solid rgba(255, 128, 128, 0.35);
+  }
+  .unauthorized-title {
+    font-size: 19px;
+    font-weight: 600;
+    margin: 0 0 10px;
+    color: var(--white);
+  }
+  .unauthorized-text {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--white);
+    opacity: 0.75;
+    line-height: 1.5;
+    margin: 0 0 24px;
+  }
+  .unauthorized-contact {
+    display: inline-block;
+    padding: 12px 20px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    border: 1px solid rgba(248, 250, 252, 0.12);
+    color: var(--cyan);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+  }
 </style>
 </head>
 <body>
-  <div class="card">
+  <div class="card" id="loginCard" style="display:none">
     <img class="logo" src="assets/logo-lockup.png" alt="Aris Vitals">
 
     <p id="err" class="err"></p>
@@ -153,112 +189,165 @@
     <p id="googleErr" class="err"></p>
   </div>
 
+  <div class="card" id="unauthorizedCard" style="display:none">
+    <img class="logo" src="assets/logo-lockup.png" alt="Aris Vitals">
+    <div class="unauthorized-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke="#ff8080" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <p class="unauthorized-title">Acesso não autorizado</p>
+    <p class="unauthorized-text">Este link não é válido para acessar o Aris. Se você acredita que isso é um erro, procure o administrador do Aris.</p>
+    <a class="unauthorized-contact" href="mailto:jstechltda@gmail.com">jstechltda@gmail.com</a>
+  </div>
+
   <script>
     // Ponte OAuth: esta pagina estatica (GitHub Pages) coleta a credencial e chama a
     // Edge Function do Supabase via JSON (Edge Functions nao servem HTML - ver ADR-004 revisado).
     const BRIDGE_URL = "https://ejhourrhndkfgksliusl.supabase.co/functions/v1/oauth-bridge/login";
     const GOOGLE_CALLBACK_URL = "https://ejhourrhndkfgksliusl.supabase.co/functions/v1/oauth-bridge/google-callback";
+    const UNAUTHORIZED_LOG_URL = "https://ejhourrhndkfgksliusl.supabase.co/functions/v1/oauth-bridge/unauthorized-attempt";
     const SUPABASE_AUTH_URL = "https://ejhourrhndkfgksliusl.supabase.co/auth/v1/authorize";
     const PAGE_URL = "https://js-tech-src.github.io/arisvitals-login/";
+
+    // client_id nao e segredo (so o client_secret e) - mesma logica de validacao que o
+    // oauth-bridge faz no /authorize, replicada aqui so pra dar uma mensagem de erro
+    // decente em vez do JSON cru, quando alguem acessa a pagina fora do fluxo real.
+    const KNOWN_CLIENT_ID = "lLjCSw10ka81DnCWZ55aOw";
+    const ALLOWED_REDIRECT_HOSTS = ["chat.openai.com", "chatgpt.com"];
 
     const params = new URLSearchParams(window.location.search);
     const clientId = params.get("client_id");
     const redirectUri = params.get("redirect_uri");
     const state = params.get("state") || "";
+    const hasGoogleToken = window.location.hash.includes("access_token");
 
-    const form = document.getElementById("loginForm");
-    const errEl = document.getElementById("err");
-    const btn = document.getElementById("submitBtn");
-    const googleBtn = document.getElementById("googleBtn");
-    const googleBtnText = document.getElementById("googleBtnText");
-    const googleErrEl = document.getElementById("googleErr");
-
-    // Passo 4 (ARIS-28): se voltamos do redirect do Google, o Supabase entrega a sessao
-    // no fragmento da URL (#access_token=...). Capturamos aqui e trocamos por um "code"
-    // interno do nosso proprio oauth-bridge, igual ao fluxo de senha.
-    (async () => {
-      if (!window.location.hash.includes("access_token")) return;
-      const hashParams = new URLSearchParams(window.location.hash.slice(1));
-      const accessToken = hashParams.get("access_token");
-      const refreshToken = hashParams.get("refresh_token");
-      if (!accessToken) return;
-
-      googleBtn.disabled = true;
-      googleBtnText.textContent = "Entrando...";
+    function isAllowedRedirect(uri) {
       try {
-        const res = await fetch(GOOGLE_CALLBACK_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            client_id: clientId,
-            redirect_uri: redirectUri,
-            state: state,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          googleErrEl.textContent = "Erro ao entrar com Google. Tente novamente.";
+        return ALLOWED_REDIRECT_HOSTS.includes(new URL(uri).hostname);
+      } catch {
+        return false;
+      }
+    }
+
+    // Fluxo de volta do Google traz o token no fragmento, sem repetir client_id/redirect_uri
+    // na querystring (eles ja foram validados quando a pagina redirecionou pro Google) -
+    // nesse caso so confiamos no que esta salvo, sem re-checar aqui.
+    const isAuthorized = hasGoogleToken || (clientId === KNOWN_CLIENT_ID && isAllowedRedirect(redirectUri || ""));
+
+    if (!isAuthorized) {
+      document.getElementById("unauthorizedCard").style.display = "block";
+      fetch(UNAUTHORIZED_LOG_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          reason: !clientId ? "missing_client_id"
+            : clientId !== KNOWN_CLIENT_ID ? "unknown_client_id"
+            : "disallowed_redirect_uri",
+        }),
+      }).catch(() => {});
+    } else {
+      document.getElementById("loginCard").style.display = "block";
+      initLoginCard();
+    }
+
+    function initLoginCard() {
+      const form = document.getElementById("loginForm");
+      const errEl = document.getElementById("err");
+      const btn = document.getElementById("submitBtn");
+      const googleBtn = document.getElementById("googleBtn");
+      const googleBtnText = document.getElementById("googleBtnText");
+      const googleErrEl = document.getElementById("googleErr");
+
+      // Passo 4 (ARIS-28): se voltamos do redirect do Google, o Supabase entrega a sessao
+      // no fragmento da URL (#access_token=...). Capturamos aqui e trocamos por um "code"
+      // interno do nosso proprio oauth-bridge, igual ao fluxo de senha.
+      (async () => {
+        if (!hasGoogleToken) return;
+        const hashParams = new URLSearchParams(window.location.hash.slice(1));
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        if (!accessToken) return;
+
+        googleBtn.disabled = true;
+        googleBtnText.textContent = "Entrando...";
+        try {
+          const res = await fetch(GOOGLE_CALLBACK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+              client_id: clientId,
+              redirect_uri: redirectUri,
+              state: state,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            googleErrEl.textContent = "Erro ao entrar com Google. Tente novamente.";
+            googleBtn.disabled = false;
+            googleBtnText.textContent = "Continuar com o Google";
+            return;
+          }
+          window.location.href = data.redirect_to;
+        } catch (err) {
+          googleErrEl.textContent = "Erro de conexao. Tente novamente.";
           googleBtn.disabled = false;
           googleBtnText.textContent = "Continuar com o Google";
-          return;
         }
-        window.location.href = data.redirect_to;
-      } catch (err) {
-        googleErrEl.textContent = "Erro de conexao. Tente novamente.";
-        googleBtn.disabled = false;
-        googleBtnText.textContent = "Continuar com o Google";
-      }
-    })();
+      })();
 
-    googleBtn.addEventListener("click", () => {
-      // Preserva client_id/redirect_uri/state passando pelo Supabase e voltando pra esta
-      // mesma pagina, que ja sabe processar o fragmento com o token (bloco acima).
-      const back = new URL(PAGE_URL);
-      if (clientId) back.searchParams.set("client_id", clientId);
-      if (redirectUri) back.searchParams.set("redirect_uri", redirectUri);
-      if (state) back.searchParams.set("state", state);
-      const dest = new URL(SUPABASE_AUTH_URL);
-      dest.searchParams.set("provider", "google");
-      dest.searchParams.set("redirect_to", back.toString());
-      window.location.href = dest.toString();
-    });
+      googleBtn.addEventListener("click", () => {
+        // Preserva client_id/redirect_uri/state passando pelo Supabase e voltando pra esta
+        // mesma pagina, que ja sabe processar o fragmento com o token (bloco acima).
+        const back = new URL(PAGE_URL);
+        if (clientId) back.searchParams.set("client_id", clientId);
+        if (redirectUri) back.searchParams.set("redirect_uri", redirectUri);
+        if (state) back.searchParams.set("state", state);
+        const dest = new URL(SUPABASE_AUTH_URL);
+        dest.searchParams.set("provider", "google");
+        dest.searchParams.set("redirect_to", back.toString());
+        window.location.href = dest.toString();
+      });
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      errEl.textContent = "";
-      btn.disabled = true;
-      btn.textContent = "Entrando...";
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errEl.textContent = "";
+        btn.disabled = true;
+        btn.textContent = "Entrando...";
 
-      try {
-        const res = await fetch(BRIDGE_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: document.getElementById("email").value,
-            password: document.getElementById("password").value,
-            client_id: clientId,
-            redirect_uri: redirectUri,
-            state: state,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          errEl.textContent = data.error === "invalid_credentials"
-            ? "E-mail ou senha invalidos."
-            : "Erro ao entrar. Tente novamente.";
+        try {
+          const res = await fetch(BRIDGE_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: document.getElementById("email").value,
+              password: document.getElementById("password").value,
+              client_id: clientId,
+              redirect_uri: redirectUri,
+              state: state,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            errEl.textContent = data.error === "invalid_credentials"
+              ? "E-mail ou senha invalidos."
+              : "Erro ao entrar. Tente novamente.";
+            btn.disabled = false;
+            btn.textContent = "Entrar";
+            return;
+          }
+          window.location.href = data.redirect_to;
+        } catch (err) {
+          errEl.textContent = "Erro de conexao. Tente novamente.";
           btn.disabled = false;
           btn.textContent = "Entrar";
-          return;
         }
-        window.location.href = data.redirect_to;
-      } catch (err) {
-        errEl.textContent = "Erro de conexao. Tente novamente.";
-        btn.disabled = false;
-        btn.textContent = "Entrar";
-      }
-    });
+      });
+    }
   </script>
 </body>
 </html>
