@@ -108,12 +108,18 @@
       <input type="password" id="password" required autocomplete="current-password">
       <button type="submit" id="submitBtn">Entrar</button>
     </form>
+
+    <button type="button" id="googleBtn" style="margin-top:12px;background:var(--bg-secondary);color:var(--white);border:1px solid rgba(248,250,252,0.12);">Continuar com Google</button>
+    <p id="googleErr" class="err"></p>
   </div>
 
   <script>
     // Ponte OAuth: esta pagina estatica (GitHub Pages) coleta a credencial e chama a
     // Edge Function do Supabase via JSON (Edge Functions nao servem HTML - ver ADR-004 revisado).
     const BRIDGE_URL = "https://ejhourrhndkfgksliusl.supabase.co/functions/v1/oauth-bridge/login";
+    const GOOGLE_CALLBACK_URL = "https://ejhourrhndkfgksliusl.supabase.co/functions/v1/oauth-bridge/google-callback";
+    const SUPABASE_AUTH_URL = "https://ejhourrhndkfgksliusl.supabase.co/auth/v1/authorize";
+    const PAGE_URL = "https://js-tech-src.github.io/arisvitals-login/";
 
     const params = new URLSearchParams(window.location.search);
     const clientId = params.get("client_id");
@@ -123,6 +129,60 @@
     const form = document.getElementById("loginForm");
     const errEl = document.getElementById("err");
     const btn = document.getElementById("submitBtn");
+    const googleBtn = document.getElementById("googleBtn");
+    const googleErrEl = document.getElementById("googleErr");
+
+    // Passo 4 (ARIS-28): se voltamos do redirect do Google, o Supabase entrega a sessao
+    // no fragmento da URL (#access_token=...). Capturamos aqui e trocamos por um "code"
+    // interno do nosso proprio oauth-bridge, igual ao fluxo de senha.
+    (async () => {
+      if (!window.location.hash.includes("access_token")) return;
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+      if (!accessToken) return;
+
+      googleBtn.disabled = true;
+      googleBtn.textContent = "Entrando...";
+      try {
+        const res = await fetch(GOOGLE_CALLBACK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            state: state,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          googleErrEl.textContent = "Erro ao entrar com Google. Tente novamente.";
+          googleBtn.disabled = false;
+          googleBtn.textContent = "Continuar com Google";
+          return;
+        }
+        window.location.href = data.redirect_to;
+      } catch (err) {
+        googleErrEl.textContent = "Erro de conexao. Tente novamente.";
+        googleBtn.disabled = false;
+        googleBtn.textContent = "Continuar com Google";
+      }
+    })();
+
+    googleBtn.addEventListener("click", () => {
+      // Preserva client_id/redirect_uri/state passando pelo Supabase e voltando pra esta
+      // mesma pagina, que ja sabe processar o fragmento com o token (bloco acima).
+      const back = new URL(PAGE_URL);
+      if (clientId) back.searchParams.set("client_id", clientId);
+      if (redirectUri) back.searchParams.set("redirect_uri", redirectUri);
+      if (state) back.searchParams.set("state", state);
+      const dest = new URL(SUPABASE_AUTH_URL);
+      dest.searchParams.set("provider", "google");
+      dest.searchParams.set("redirect_to", back.toString());
+      window.location.href = dest.toString();
+    });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
