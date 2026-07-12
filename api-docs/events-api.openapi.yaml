@@ -400,11 +400,10 @@ paths:
       operationId: registerExamReport
       summary: Cadastra o laudo agregador de um exame (ARIS-75, ADR-015)
       description: >
-        Cria o registro de metadados do exame (exam_reports). Os resultados quantitativos
-        do exame devem ser registrados como eventos separados (createEvent/createEventsBatch,
-        domain=exame) usando o exam_report_id retornado aqui. laudo (objeto livre) guarda
-        a impressao diagnostica narrativa quando houver (ex: laudo de imagem) - sem
-        estrutura fixa, varia por modalidade.
+        Cria os metadados do laudo. Resultados quantitativos vao como eventos
+        separados (createEvent/createEventsBatch, domain=exame) usando o
+        exam_report_id retornado aqui. laudo (objeto livre) guarda a impressao
+        diagnostica narrativa, quando houver.
       requestBody:
         required: true
         content:
