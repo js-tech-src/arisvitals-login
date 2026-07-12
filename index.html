@@ -202,6 +202,17 @@
   </div>
 
   <script>
+    // ADR-017 (fix): navegadores mobile usam bfcache (back-forward cache) e podem restaurar
+    // esta pagina com o DOM ja renderizado (ex: card "Acesso nao autorizado" visivel) sem
+    // reexecutar este script. Isso fazia uma tentativa nova e valida de login "herdar" o
+    // estado de erro de uma tentativa anterior. Forca reload completo nesse caso, garantindo
+    // que a logica de isAuthorized abaixo sempre rode com os parametros da URL atual.
+    window.addEventListener("pageshow", function (event) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    });
+
     // Ponte OAuth: esta pagina estatica (GitHub Pages) coleta a credencial e chama a
     // Edge Function do Supabase via JSON (Edge Functions nao servem HTML - ver ADR-004 revisado).
     const BRIDGE_URL = "https://ejhourrhndkfgksliusl.supabase.co/functions/v1/oauth-bridge/login";
