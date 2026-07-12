@@ -61,6 +61,19 @@ paths:
                 contexto:
                   type: string
                   description: "Motivo/circunstancia opcional anexado pelo paciente (ex: 'era festa', 'trabalhei da rua')"
+                corrige_event_id:
+                  type: string
+                  description: "event_id do evento (grupo) que este registro corrige. Correcao e sempre append-only: nunca sobrescreve, so aponta qual evento foi superado (ADR-014)."
+                exam_report_id:
+                  type: integer
+                  description: "ID do laudo agregador (exam_reports), retornado por registerExamReport. Obrigatorio por convencao quando domain=exame."
+                reference_range:
+                  type: object
+                  description: "Faixa de referencia do resultado quando domain=exame (ex: {min: 4.0, max: 11.0}), varia por idade/sexo/metodo do laboratorio."
+                status:
+                  type: string
+                  enum: [normal, alterado, indeterminado]
+                  description: "Status do resultado quando domain=exame."
       responses:
         "201":
           description: Evento criado
@@ -128,6 +141,15 @@ paths:
                         type: string
                       contexto:
                         type: string
+                      corrige_event_id:
+                        type: string
+                      exam_report_id:
+                        type: integer
+                      reference_range:
+                        type: object
+                      status:
+                        type: string
+                        enum: [normal, alterado, indeterminado]
       responses:
         "201":
           description: Lote criado (retorna created + events)
@@ -371,5 +393,62 @@ paths:
                     type: number
         "400":
           description: Campo obrigatorio ausente, movement_type invalido, ou produto nao encontrado pelo nome_produto
+        "401":
+          description: Token ausente ou invalido
+  /exam-reports/register:
+    post:
+      operationId: registerExamReport
+      summary: Cadastra o laudo agregador de um exame (ARIS-75, ADR-015)
+      description: >
+        Cria o registro de metadados do exame (exam_reports). Os resultados quantitativos
+        do exame devem ser registrados como eventos separados (createEvent/createEventsBatch,
+        domain=exame) usando o exam_report_id retornado aqui. laudo (objeto livre) guarda
+        a impressao diagnostica narrativa quando houver (ex: laudo de imagem) - sem
+        estrutura fixa, varia por modalidade.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, realizado_em]
+              properties:
+                tipo:
+                  type: string
+                  description: "Tipo do exame (ex: laboratorial, bioimpedancia, ecocardiograma, ultrassom, ressonancia, tomografia, radiografia)."
+                modalidade:
+                  type: string
+                especialidade:
+                  type: string
+                realizado_em:
+                  type: string
+                  description: "Data de realizacao do exame, formato ISO (YYYY-MM-DD)."
+                laudo_em:
+                  type: string
+                  description: "Data do laudo, formato ISO (YYYY-MM-DD), se diferente da realizacao."
+                solicitante:
+                  type: string
+                executante:
+                  type: string
+                laudo:
+                  type: object
+                  description: "Estrutura livre para a impressao diagnostica narrativa ou metadados adicionais do laudo, quando houver."
+                confidence:
+                  type: string
+                  enum: [alta, media, baixa]
+      responses:
+        "201":
+          description: Laudo registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exam_report_id:
+                    type: integer
+                  exam_report:
+                    type: object
+        "400":
+          description: Campo obrigatorio ausente (tipo, realizado_em) ou confidence invalido
         "401":
           description: Token ausente ou invalido
