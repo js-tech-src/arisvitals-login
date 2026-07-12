@@ -36,7 +36,7 @@ paths:
                   description: "Data e hora do evento, formato ISO (ex: 2026-07-10T08:30:00)"
                 domain:
                   type: string
-                  enum: [peso, alimentacao, agua, exercicio, suplemento, exame]
+                  enum: [peso, alimentacao, agua, exercicio, suplemento, exame, sono]
                 item:
                   type: string
                   description: "Nome legivel do item (ex: Balanca, Peito de frango)"
@@ -49,7 +49,7 @@ paths:
                   type: string
                 source:
                   type: string
-                  enum: [imagem_balanca, imagem_exercicio, texto_usuario, contexto_inicial, rotulo_produto, documento_exame, migracao_historica]
+                  enum: [imagem_balanca, imagem_exercicio, texto_usuario, contexto_inicial, rotulo_produto, documento_exame, migracao_historica, imagem_wearable]
                 confidence:
                   type: string
                   enum: [alta, media, baixa]
@@ -74,7 +74,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [peso, alimentacao, agua, exercicio, suplemento, exame]
+            enum: [peso, alimentacao, agua, exercicio, suplemento, exame, sono]
         - name: limit
           in: query
           required: false
@@ -107,7 +107,7 @@ paths:
                         type: string
                       domain:
                         type: string
-                        enum: [peso, alimentacao, agua, exercicio, suplemento, exame]
+                        enum: [peso, alimentacao, agua, exercicio, suplemento, exame, sono]
                       item:
                         type: string
                       metric:
@@ -118,7 +118,7 @@ paths:
                         type: string
                       source:
                         type: string
-                        enum: [imagem_balanca, imagem_exercicio, texto_usuario, contexto_inicial, rotulo_produto, documento_exame, migracao_historica]
+                        enum: [imagem_balanca, imagem_exercicio, texto_usuario, contexto_inicial, rotulo_produto, documento_exame, migracao_historica, imagem_wearable]
                       confidence:
                         type: string
                         enum: [alta, media, baixa]
