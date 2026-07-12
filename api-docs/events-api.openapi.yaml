@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Aris Events API (PoC)
-  version: 1.3.0
+  version: 1.4.0
 servers:
   - url: https://ejhourrhndkfgksliusl.supabase.co/functions/v1/events-api
 paths:
@@ -163,3 +163,93 @@ paths:
       responses:
         "201":
           description: Documento gravado (storage + patient_documents)
+  /reference/products/register:
+    post:
+      operationId: registerReferenceProduct
+      summary: Cadastra produto de referencia (catalogo global) com tabela nutricional (ARIS-81, ADR-016)
+      description: >
+        Catalogo global (sem patient_id) - qualquer paciente autenticado pode cadastrar um produto
+        que fica disponivel para todos. Cadastro pode ser feito isoladamente ou apenas com o nome
+        (a tabela nutricional pode ser completada depois). O campo table_complete e calculado pelo
+        servidor: true somente quando calorias_kcal, proteinas_g, carboidratos_g e gorduras_totais_g
+        estao todos preenchidos. Esta rota nunca e pre-requisito para registrar um evento de alimentacao.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nome_produto]
+              properties:
+                nome_produto:
+                  type: string
+                  example: "Frango grelhado Seara"
+                marca:
+                  type: string
+                categoria:
+                  type: string
+                tipo_subtipo:
+                  type: string
+                grupo_substituicao:
+                  type: string
+                ean:
+                  type: string
+                porcao_quantidade:
+                  type: number
+                porcao_unidade:
+                  type: string
+                  example: "g"
+                porcoes_por_embalagem:
+                  type: number
+                calorias_kcal:
+                  type: number
+                carboidratos_g:
+                  type: number
+                acucares_totais_g:
+                  type: number
+                acucares_adicionados_g:
+                  type: number
+                proteinas_g:
+                  type: number
+                gorduras_totais_g:
+                  type: number
+                gorduras_saturadas_g:
+                  type: number
+                gorduras_trans_g:
+                  type: number
+                fibra_g:
+                  type: number
+                sodio_mg:
+                  type: number
+                vitaminas_minerais:
+                  type: string
+                outros_nutrientes:
+                  type: string
+                pct_vd_relevante:
+                  type: string
+                ingredientes:
+                  type: string
+                alergenicos:
+                  type: string
+                modo_uso_dose:
+                  type: string
+                observacoes_fonte:
+                  type: string
+      responses:
+        "201":
+          description: Produto registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product_id:
+                    type: integer
+                  table_complete:
+                    type: boolean
+                  product:
+                    type: object
+        "400":
+          description: Campo obrigatorio ausente (nome_produto)
+        "401":
+          description: Token ausente ou invalido
