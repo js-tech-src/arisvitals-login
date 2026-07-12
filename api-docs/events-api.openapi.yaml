@@ -166,12 +166,12 @@ paths:
   /reference/products/register:
     post:
       operationId: registerReferenceProduct
-      summary: Cadastra produto de referencia (catalogo global) com tabela nutricional (ARIS-81, ADR-016)
+      summary: Cadastra ou atualiza produto de referencia (catalogo global) com tabela nutricional (ARIS-81/ARIS-87, ADR-016)
       description: >
-        Cadastra produto no catalogo global de referencia. Pode ser so o nome
-        (completa depois) ou com tabela nutricional completa. table_complete
-        e calculado pelo servidor. Nunca e pre-requisito para registrar
-        evento de alimentacao.
+        Cadastra produto no catalogo global de referencia. Se ja existir (por EAN ou
+        nome+marca+categoria), faz fill-gap: preenche so os campos vazios, nunca sobrescreve
+        valor ja preenchido. table_complete e calculado pelo servidor. Nunca e pre-requisito
+        para registrar evento de alimentacao.
       requestBody:
         required: true
         content:
@@ -234,9 +234,15 @@ paths:
                   type: string
                 observacoes_fonte:
                   type: string
+                source:
+                  type: string
+                  enum: [rotulo_imagem, texto_usuario]
+                confidence:
+                  type: string
+                  enum: [alta, media, baixa]
       responses:
         "201":
-          description: Produto registrado
+          description: Produto novo registrado (action=created)
           content:
             application/json:
               schema:
@@ -246,9 +252,32 @@ paths:
                     type: integer
                   table_complete:
                     type: boolean
+                  action:
+                    type: string
+                    enum: [created]
+                  product:
+                    type: object
+        "200":
+          description: Produto ja existia — atualizado (fill-gap) ou sem novidade
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product_id:
+                    type: integer
+                  table_complete:
+                    type: boolean
+                  action:
+                    type: string
+                    enum: [updated, already_registered]
+                  filled_fields:
+                    type: array
+                    items:
+                      type: string
                   product:
                     type: object
         "400":
-          description: Campo obrigatorio ausente (nome_produto)
+          description: Campo obrigatorio ausente (nome_produto) ou source/confidence invalido
         "401":
           description: Token ausente ou invalido
