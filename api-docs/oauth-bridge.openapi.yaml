@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Aris OAuth Bridge
-  version: 1.0.0
+  version: 1.1.0
   description: >
     Ponte OAuth (ADR-004) entre ChatGPT Actions e o Supabase Auth.
     Implementa o fluxo Authorization Code: /authorize redireciona pra
@@ -11,6 +11,20 @@ info:
 servers:
   - url: https://ejhourrhndkfgksliusl.supabase.co/functions/v1/oauth-bridge
 paths:
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check publico para monitoramento externo (UptimeRobot, ARIS-80). Sem auth, nao toca no banco.
+      responses:
+        "200":
+          description: Servico respondendo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  service: { type: string, example: oauth-bridge }
   /authorize:
     get:
       operationId: authorize
