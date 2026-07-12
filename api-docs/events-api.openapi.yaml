@@ -168,11 +168,10 @@ paths:
       operationId: registerReferenceProduct
       summary: Cadastra produto de referencia (catalogo global) com tabela nutricional (ARIS-81, ADR-016)
       description: >
-        Catalogo global (sem patient_id) - qualquer paciente autenticado pode cadastrar um produto
-        que fica disponivel para todos. Cadastro pode ser feito isoladamente ou apenas com o nome
-        (a tabela nutricional pode ser completada depois). O campo table_complete e calculado pelo
-        servidor: true somente quando calorias_kcal, proteinas_g, carboidratos_g e gorduras_totais_g
-        estao todos preenchidos. Esta rota nunca e pre-requisito para registrar um evento de alimentacao.
+        Cadastra produto no catalogo global de referencia. Pode ser so o nome
+        (completa depois) ou com tabela nutricional completa. table_complete
+        e calculado pelo servidor. Nunca e pre-requisito para registrar
+        evento de alimentacao.
       requestBody:
         required: true
         content:
