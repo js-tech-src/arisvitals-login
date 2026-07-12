@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Aris Events API (PoC)
-  version: 1.1.0
+  version: 1.2.0
 servers:
   - url: https://ejhourrhndkfgksliusl.supabase.co/functions/v1/events-api
 paths:
@@ -70,6 +70,53 @@ paths:
       responses:
         "200":
           description: Lista de eventos
+  /create-batch:
+    post:
+      operationId: createEventsBatch
+      summary: Registra varios eventos de uma vez (exames com muitas metricas, diario alimentar completo)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [events]
+              properties:
+                events:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+                    required: [event_datetime, domain, metric, value]
+                    properties:
+                      event_datetime:
+                        type: string
+                      domain:
+                        type: string
+                        enum: [peso, alimentacao, agua, exercicio, suplemento, exame]
+                      item:
+                        type: string
+                      metric:
+                        type: string
+                      value:
+                        type: string
+                      unit:
+                        type: string
+                      source:
+                        type: string
+                        enum: [imagem_balanca, imagem_exercicio, texto_usuario, contexto_inicial, rotulo_produto, documento_exame, migracao_historica]
+                      confidence:
+                        type: string
+                        enum: [alta, media, baixa]
+                      grupo_substituicao:
+                        type: string
+                      refeicao_tipo:
+                        type: string
+                      contexto:
+                        type: string
+      responses:
+        "201":
+          description: Lote criado (retorna created + events)
   /documents/upload:
     post:
       operationId: uploadDocument
