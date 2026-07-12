@@ -202,17 +202,6 @@
   </div>
 
   <script>
-    // ADR-017 (fix): navegadores mobile usam bfcache (back-forward cache) e podem restaurar
-    // esta pagina com o DOM ja renderizado (ex: card "Acesso nao autorizado" visivel) sem
-    // reexecutar este script. Isso fazia uma tentativa nova e valida de login "herdar" o
-    // estado de erro de uma tentativa anterior. Forca reload completo nesse caso, garantindo
-    // que a logica de isAuthorized abaixo sempre rode com os parametros da URL atual.
-    window.addEventListener("pageshow", function (event) {
-      if (event.persisted) {
-        window.location.reload();
-      }
-    });
-
     // Ponte OAuth: esta pagina estatica (GitHub Pages) coleta a credencial e chama a
     // Edge Function do Supabase via JSON (Edge Functions nao servem HTML - ver ADR-004 revisado).
     const BRIDGE_URL = "https://ejhourrhndkfgksliusl.supabase.co/functions/v1/oauth-bridge/login";
@@ -227,12 +216,6 @@
     const KNOWN_CLIENT_ID = "lLjCSw10ka81DnCWZ55aOw";
     const ALLOWED_REDIRECT_HOSTS = ["chat.openai.com", "chatgpt.com"];
 
-    const params = new URLSearchParams(window.location.search);
-    const clientId = params.get("client_id");
-    const redirectUri = params.get("redirect_uri");
-    const state = params.get("state") || "";
-    const hasGoogleToken = window.location.hash.includes("access_token");
-
     function isAllowedRedirect(uri) {
       try {
         return ALLOWED_REDIRECT_HOSTS.includes(new URL(uri).hostname);
@@ -241,28 +224,62 @@
       }
     }
 
-    // Fluxo de volta do Google traz o token no fragmento, sem repetir client_id/redirect_uri
-    // na querystring (eles ja foram validados quando a pagina redirecionou pro Google) -
-    // nesse caso so confiamos no que esta salvo, sem re-checar aqui.
-    const isAuthorized = hasGoogleToken || (clientId === KNOWN_CLIENT_ID && isAllowedRedirect(redirectUri || ""));
+    let loginCardInitialized = false;
+    let clientId = null;
+    let redirectUri = null;
+    let hasGoogleToken = false;
 
-    if (!isAuthorized) {
-      document.getElementById("unauthorizedCard").style.display = "block";
-      fetch(UNAUTHORIZED_LOG_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client_id: clientId,
-          redirect_uri: redirectUri,
-          reason: !clientId ? "missing_client_id"
-            : clientId !== KNOWN_CLIENT_ID ? "unknown_client_id"
-            : "disallowed_redirect_uri",
-        }),
-      }).catch(() => {});
-    } else {
-      document.getElementById("loginCard").style.display = "block";
-      initLoginCard();
+    // ADR-018 (fix revisado): a primeira versao deste fix forcava window.location.reload()
+    // quando pageshow disparava com event.persisted=true, pra evitar que o bfcache do
+    // navegador restaurasse o card de erro de uma tentativa anterior. Isso causou uma
+    // regressao pior: alguns navegadores/webviews (incluindo o embutido do ChatGPT) reportam
+    // persisted=true ja no carregamento inicial, gerando um loop de reload infinito (pagina
+    // fica carregando pra sempre, sem nunca chegar a chamar o oauth-bridge). Correcao: em vez
+    // de recarregar a pagina, so reexecuta a logica de decisao (mostra login ou fallback) com
+    // os parametros atuais da URL - sem navegacao nova, sem risco de loop.
+    function renderAuthState() {
+      const params = new URLSearchParams(window.location.search);
+      clientId = params.get("client_id");
+      redirectUri = params.get("redirect_uri");
+      hasGoogleToken = window.location.hash.includes("access_token");
+
+      // Fluxo de volta do Google traz o token no fragmento, sem repetir client_id/redirect_uri
+      // na querystring (eles ja foram validados quando a pagina redirecionou pro Google) -
+      // nesse caso so confiamos no que esta salvo, sem re-checar aqui.
+      const isAuthorized = hasGoogleToken || (clientId === KNOWN_CLIENT_ID && isAllowedRedirect(redirectUri || ""));
+
+      const unauthorizedCard = document.getElementById("unauthorizedCard");
+      const loginCard = document.getElementById("loginCard");
+
+      if (!isAuthorized) {
+        loginCard.style.display = "none";
+        unauthorizedCard.style.display = "block";
+        fetch(UNAUTHORIZED_LOG_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            reason: !clientId ? "missing_client_id"
+              : clientId !== KNOWN_CLIENT_ID ? "unknown_client_id"
+              : "disallowed_redirect_uri",
+          }),
+        }).catch(() => {});
+      } else {
+        unauthorizedCard.style.display = "none";
+        loginCard.style.display = "block";
+        if (!loginCardInitialized) {
+          loginCardInitialized = true;
+          initLoginCard();
+        }
+      }
     }
+
+    renderAuthState();
+    window.addEventListener("pageshow", renderAuthState);
+
+    const params = new URLSearchParams(window.location.search);
+    const state = params.get("state") || "";
 
     function initLoginCard() {
       const form = document.getElementById("loginForm");
