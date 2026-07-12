@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aris - Status dos Servicos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #07121D;
+    --bg-secondary: #182836;
+    --green: #42E37C;
+    --blue: #37D5FF;
+    --cyan: #00FFC8;
+    --white: #F8FAFC;
+    --red: #ff8080;
+    --yellow: #FFD166;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg-primary);
+    color: var(--white);
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card { width: 100%; max-width: 480px; }
+  .logo {
+    width: 180px;
+    max-width: 60%;
+    height: auto;
+    margin: 0 auto 12px;
+    display: block;
+  }
+  h1 {
+    font-size: 17px;
+    font-weight: 600;
+    text-align: center;
+    margin: 0 0 24px;
+    opacity: 0.9;
+  }
+  .service {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-secondary);
+    border: 1px solid rgba(248, 250, 252, 0.1);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .service-name { font-size: 14px; font-weight: 500; }
+  .service-desc { font-size: 11.5px; opacity: 0.55; margin-top: 2px; }
+  .badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge.checking { background: rgba(248,250,252,0.08); color: var(--white); opacity: 0.6; }
+  .badge.up   { background: rgba(66,227,124,0.14); color: var(--green); }
+  .badge.down { background: rgba(255,128,128,0.14); color: var(--red); }
+  .external {
+    background: transparent;
+    border: 1px dashed rgba(248, 250, 252, 0.18);
+  }
+  .external .badge { background: rgba(255,209,102,0.12); color: var(--yellow); }
+  .external a { color: var(--blue); text-decoration: none; }
+  .refresh {
+    width: 100%;
+    padding: 12px;
+    margin-top: 14px;
+    border: 0;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--green), var(--blue), var(--cyan));
+    color: var(--bg-primary);
+    font-family: 'Sora', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .refresh:disabled { opacity: 0.5; cursor: default; }
+  .updated { text-align: center; font-size: 11.5px; opacity: 0.5; margin-top: 12px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="../assets/logo-lockup.png" alt="Aris Vitals">
+    <h1>Status dos Servicos</h1>
+
+    <div class="service" id="svc-pages">
+      <div>
+        <div class="service-name">Paginas (GitHub Pages)</div>
+        <div class="service-desc">Login, privacidade, docs e esta pagina</div>
+      </div>
+      <span class="badge up">Operacional</span>
+    </div>
+
+    <div class="service" id="svc-oauth">
+      <div>
+        <div class="service-name">Autenticacao (oauth-bridge)</div>
+        <div class="service-desc">Login por senha e Google</div>
+      </div>
+      <span class="badge checking">Verificando...</span>
+    </div>
+
+    <div class="service" id="svc-events">
+      <div>
+        <div class="service-name">Registro de eventos (events-api)</div>
+        <div class="service-desc">Gravacao e consulta de registros</div>
+      </div>
+      <span class="badge checking">Verificando...</span>
+    </div>
+
+    <div class="service" id="svc-auth">
+      <div>
+        <div class="service-name">Supabase Auth</div>
+        <div class="service-desc">Servico de identidade</div>
+      </div>
+      <span class="badge checking">Verificando...</span>
+    </div>
+
+    <div class="service external">
+      <div>
+        <div class="service-name">ChatGPT / GPT Actions</div>
+        <div class="service-desc">Nao monitoravel daqui - <a href="https://status.openai.com" target="_blank" rel="noopener">status.openai.com</a></div>
+      </div>
+      <span class="badge">Externo</span>
+    </div>
+
+    <button class="refresh" id="refreshBtn">Verificar novamente</button>
+    <p class="updated" id="updatedAt"></p>
+  </div>
+
+  <script>
+    const BASE = "https://ejhourrhndkfgksliusl.supabase.co";
+
+    // Cada checagem espera um status especifico de "vivo": os endpoints respondem
+    // erro controlado (400/401) quando chamados sem credencial - isso prova que a
+    // funcao esta de pe. Timeout de 8s = fora do ar.
+    const checks = [
+      { el: "svc-oauth",  url: BASE + "/functions/v1/oauth-bridge/authorize", aliveStatuses: [400] },
+      { el: "svc-events", url: BASE + "/functions/v1/events-api/list",        aliveStatuses: [401] },
+      { el: "svc-auth",   url: BASE + "/auth/v1/health",                      aliveStatuses: [200, 401] },
+    ];
+
+    function setBadge(id, state, label) {
+      const badge = document.querySelector("#" + id + " .badge");
+      badge.className = "badge " + state;
+      badge.textContent = label;
+    }
+
+    async function checkOne(c) {
+      setBadge(c.el, "checking", "Verificando...");
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const res = await fetch(c.url, { signal: controller.signal, headers: { apikey: "status-page" } });
+        clearTimeout(timer);
+        if (c.aliveStatuses.includes(res.status) || res.ok) {
+          setBadge(c.el, "up", "Operacional");
+        } else {
+          setBadge(c.el, "down", "Instavel (" + res.status + ")");
+        }
+      } catch (e) {
+        clearTimeout(timer);
+        setBadge(c.el, "down", "Fora do ar");
+      }
+    }
+
+    async function runAll() {
+      const btn = document.getElementById("refreshBtn");
+      btn.disabled = true;
+      await Promise.all(checks.map(checkOne));
+      btn.disabled = false;
+      document.getElementById("updatedAt").textContent =
+        "Ultima verificacao: " + new Date().toLocaleTimeString("pt-BR");
+    }
+
+    document.getElementById("refreshBtn").addEventListener("click", runAll);
+    runAll();
+  </script>
+</body>
+</html>
