@@ -127,12 +127,12 @@
       <span class="badge checking">Verificando...</span>
     </div>
 
-    <div class="service external">
+    <div class="service" id="svc-openai">
       <div>
-        <div class="service-name">ChatGPT / GPT Actions</div>
-        <div class="service-desc">Nao monitoravel daqui - <a href="https://status.openai.com" target="_blank" rel="noopener">status.openai.com</a></div>
+        <div class="service-name">ChatGPT / GPT Actions (OpenAI)</div>
+        <div class="service-desc">Plataforma externa - detalhes em <a href="https://status.openai.com" target="_blank" rel="noopener" style="color: var(--blue); text-decoration: none;">status.openai.com</a></div>
       </div>
-      <span class="badge">Externo</span>
+      <span class="badge checking">Verificando...</span>
     </div>
 
     <button class="refresh" id="refreshBtn">Verificar novamente</button>
@@ -175,10 +175,36 @@
       }
     }
 
+    async function checkOpenAI() {
+      setBadge("svc-openai", "checking", "Verificando...");
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        // Statuspage (Atlassian) expoe API JSON publica com CORS aberto.
+        // indicator: none | minor | major | critical
+        const res = await fetch("https://status.openai.com/api/v2/status.json", { signal: controller.signal });
+        clearTimeout(timer);
+        const data = await res.json();
+        const ind = data?.status?.indicator ?? "unknown";
+        if (ind === "none") {
+          setBadge("svc-openai", "up", "Operacional");
+        } else if (ind === "minor") {
+          setBadge("svc-openai", "down", "Degradado");
+        } else if (ind === "major" || ind === "critical") {
+          setBadge("svc-openai", "down", "Incidente");
+        } else {
+          setBadge("svc-openai", "checking", "Indisponivel");
+        }
+      } catch (e) {
+        clearTimeout(timer);
+        setBadge("svc-openai", "checking", "Nao verificavel");
+      }
+    }
+
     async function runAll() {
       const btn = document.getElementById("refreshBtn");
       btn.disabled = true;
-      await Promise.all(checks.map(checkOne));
+      await Promise.all([...checks.map(checkOne), checkOpenAI()]);
       btn.disabled = false;
       document.getElementById("updatedAt").textContent =
         "Ultima verificacao: " + new Date().toLocaleTimeString("pt-BR");
