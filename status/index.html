@@ -162,7 +162,7 @@
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 8000);
       try {
-        const res = await fetch(c.url, { signal: controller.signal, headers: { apikey: "status-page" } });
+        const res = await fetch(c.url, { signal: controller.signal });
         clearTimeout(timer);
         if (c.aliveStatuses.includes(res.status) || res.ok) {
           setBadge(c.el, "up", "Operacional");
