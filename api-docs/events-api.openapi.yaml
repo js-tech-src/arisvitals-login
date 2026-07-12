@@ -240,6 +240,12 @@ paths:
                 confidence:
                   type: string
                   enum: [alta, media, baixa]
+                controla_estoque:
+                  type: boolean
+                  description: "Se este produto deve ter estoque controlado (baixa automatica sugerida ao registrar consumo). Perguntar ao paciente quando o produto ainda nao existe no catalogo."
+                estoque_minimo:
+                  type: number
+                  description: "Quantidade minima antes de alertar reposicao (mesma unidade da porcao)."
       responses:
         "201":
           description: Produto novo registrado (action=created)
@@ -279,5 +285,91 @@ paths:
                     type: object
         "400":
           description: Campo obrigatorio ausente (nome_produto) ou source/confidence invalido
+        "401":
+          description: Token ausente ou invalido
+  /stock/active:
+    get:
+      operationId: getActiveStock
+      summary: Lista produtos com controle de estoque ligados ao protocolo de suplementos vigente (ARIS-17)
+      description: >
+        Retorna, para cada produto do protocolo de suplementos vigente com controla_estoque=true,
+        a dose prescrita e o saldo atual. Base para o Aris sugerir a baixa apos um consumo ser
+        registrado, ou avisar quando o saldo estiver baixo.
+      responses:
+        "200":
+          description: Lista de produtos ativos no controle de estoque
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        product_id:
+                          type: integer
+                        nome_produto:
+                          type: string
+                        dose_protocolo:
+                          type: number
+                        unidade:
+                          type: string
+                        frequencia:
+                          type: string
+                        estoque_minimo:
+                          type: number
+                        saldo_atual:
+                          type: number
+        "401":
+          description: Token ausente ou invalido
+  /stock/register:
+    post:
+      operationId: registerStockMovement
+      summary: Grava um movimento de estoque - consumo, compra ou ajuste (ARIS-17)
+      description: >
+        So deve ser chamado depois que o Aris confirmou com o paciente qual produto e quantidade
+        serao movimentados. Nunca automatico. Aceita product_id ou nome_produto (faz lookup).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [movement_type, quantidade]
+              properties:
+                product_id:
+                  type: integer
+                nome_produto:
+                  type: string
+                  description: "Alternativa ao product_id - faz lookup por nome exato (case-insensitive)."
+                movement_type:
+                  type: string
+                  enum: [compra, consumo, ajuste]
+                quantidade:
+                  type: number
+                unidade:
+                  type: string
+                event_datetime:
+                  type: string
+                  description: "ISO. Se omitido, usa o momento atual."
+                source_event_id:
+                  type: string
+                  description: "event_id do evento de consumo que originou esta baixa, se houver (rastreabilidade)."
+      responses:
+        "201":
+          description: Movimento gravado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movement:
+                    type: object
+                  saldo_atual:
+                    type: number
+        "400":
+          description: Campo obrigatorio ausente, movement_type invalido, ou produto nao encontrado pelo nome_produto
         "401":
           description: Token ausente ou invalido
