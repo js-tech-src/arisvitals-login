@@ -142,13 +142,13 @@
   <script>
     const BASE = "https://ejhourrhndkfgksliusl.supabase.co";
 
-    // Cada checagem espera um status especifico de "vivo": os endpoints respondem
-    // erro controlado (400/401) quando chamados sem credencial - isso prova que a
-    // funcao esta de pe. Timeout de 8s = fora do ar.
+    // ARIS-80: as Edge Functions agora expoem GET /health publico (200 = vivo),
+    // a mesma rota usada pelo UptimeRobot - checagem limpa, sem depender de
+    // interpretar 400/401 como "saudavel". Timeout de 8s = fora do ar.
     const checks = [
-      { el: "svc-oauth",  url: BASE + "/functions/v1/oauth-bridge/authorize", aliveStatuses: [400] },
-      { el: "svc-events", url: BASE + "/functions/v1/events-api/list",        aliveStatuses: [401] },
-      { el: "svc-auth",   url: BASE + "/auth/v1/health",                      aliveStatuses: [200, 401] },
+      { el: "svc-oauth",  url: BASE + "/functions/v1/oauth-bridge/health", aliveStatuses: [200] },
+      { el: "svc-events", url: BASE + "/functions/v1/events-api/health",   aliveStatuses: [200] },
+      { el: "svc-auth",   url: BASE + "/auth/v1/health",                   aliveStatuses: [200, 401] },
     ];
 
     function setBadge(id, state, label) {
