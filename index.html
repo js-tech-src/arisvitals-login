@@ -315,14 +315,14 @@
           });
           const data = await res.json();
           if (!res.ok) {
-            googleErrEl.textContent = "Erro ao entrar com Google. Tente novamente.";
+            googleErrEl.textContent = "Erro ao entrar com Google (" + (data.error || res.status) + "). Tente novamente.";
             googleBtn.disabled = false;
             googleBtnText.textContent = "Continuar com o Google";
             return;
           }
           window.location.href = data.redirect_to;
         } catch (err) {
-          googleErrEl.textContent = "Erro de conexao. Tente novamente.";
+          googleErrEl.textContent = "Erro de conexao: " + (err && err.message ? err.message : String(err)) + ". Tente novamente.";
           googleBtn.disabled = false;
           googleBtnText.textContent = "Continuar com o Google";
         }
@@ -370,7 +370,7 @@
           }
           window.location.href = data.redirect_to;
         } catch (err) {
-          errEl.textContent = "Erro de conexao. Tente novamente.";
+          errEl.textContent = "Erro de conexao: " + (err && err.message ? err.message : String(err)) + ". Tente novamente.";
           btn.disabled = false;
           btn.textContent = "Entrar";
         }
