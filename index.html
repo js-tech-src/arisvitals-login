@@ -126,6 +126,14 @@
     margin: 8px 0 0;
     color: #FF9B9B;
   }
+  .webview-note {
+    margin: 14px 0 0;
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--white);
+    opacity: 0.55;
+    line-height: 1.4;
+  }
   .unauthorized-icon {
     width: 56px;
     height: 56px;
@@ -187,6 +195,9 @@
       <span id="googleBtnText">Continuar com o Google</span>
     </button>
     <p id="googleErr" class="err"></p>
+    <p id="webviewNote" class="webview-note" style="display:none">
+      Login com Google indisponível dentro deste app (restrição do próprio Google a navegadores embutidos). Use e-mail e senha acima.
+    </p>
   </div>
 
   <div class="card" id="unauthorizedCard" style="display:none">
@@ -222,6 +233,24 @@
       } catch {
         return false;
       }
+    }
+
+    // Deteccao heuristica de WebView embutido (apps como o ChatGPT que abrem um
+    // mini-navegador interno pra fluxos de auth). O Google bloqueia OAuth nesses
+    // navegadores desde 2021 (politica anti-phishing), o que trava o botao "Continuar
+    // com o Google" sem erro claro (fetch nunca sai do navegador). Sinais usados:
+    // 1) tokens de UA de apps conhecidos que embutem webview (Facebook, Instagram, etc);
+    // 2) no iOS, Safari real e Chrome/Firefox/Edge iOS sempre incluem "Safari/" na UA -
+    //    um WKWebView sem UA customizada tipicamente nao inclui.
+    // Heuristica, nao 100% precisa - pior caso e o botao ficar escondido sem necessidade
+    // (usuario ainda loga por e-mail/senha, sem perda de funcionalidade).
+    function isLikelyEmbeddedWebView() {
+      const ua = navigator.userAgent || "";
+      const knownEmbeddedTokens = ["; wv)", "FBAN", "FBAV", "Instagram", "Line/", "MicroMessenger", "GSA/"];
+      if (knownEmbeddedTokens.some((t) => ua.includes(t))) return true;
+      const isIOS = /iPhone|iPad|iPod/.test(ua);
+      if (isIOS && !/Safari\//.test(ua)) return true;
+      return false;
     }
 
     let loginCardInitialized = false;
@@ -287,6 +316,12 @@
       const googleBtn = document.getElementById("googleBtn");
       const googleBtnText = document.getElementById("googleBtnText");
       const googleErrEl = document.getElementById("googleErr");
+      const webviewNote = document.getElementById("webviewNote");
+
+      if (isLikelyEmbeddedWebView()) {
+        googleBtn.style.display = "none";
+        webviewNote.style.display = "block";
+      }
 
       // Passo 4 (ARIS-28): se voltamos do redirect do Google, o Supabase entrega a sessao
       // no fragmento da URL (#access_token=...). Capturamos aqui e trocamos por um "code"
