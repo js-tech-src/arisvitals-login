@@ -275,11 +275,10 @@
       }
     }
 
+    const state = new URLSearchParams(window.location.search).get("state") || "";
+
     renderAuthState();
     window.addEventListener("pageshow", renderAuthState);
-
-    const params = new URLSearchParams(window.location.search);
-    const state = params.get("state") || "";
 
     function initLoginCard() {
       const form = document.getElementById("loginForm");
